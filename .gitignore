@@ -1,0 +1,55 @@
+# Node modules
+node_modules/
+
+# Next.js build files
+.next/
+out/
+
+# Build outputs
+build/
+dist/
+
+# Logs
+logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# IDE and editor files
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Cache directories
+.cache/
+.npm/
+.yarn/
+.pnp.*
+
+# Temporary files
+*_new.*
+*_old.*
+*.tmp
+*.temp
+
+# Documentation that might be recreated
+**/TEMP_*.md
+**/TO_DELETE.*
+**/README-TO-DELETE.*
