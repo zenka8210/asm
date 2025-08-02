@@ -11,6 +11,18 @@
       "problemMatcher": [],
       "group": "build",
       "detail": "Chạy file app.js trong đúng thư mục server/"
+    },
+    {
+      "label": "Run Frontend Dev Server",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/asm/fe"
+      },
+      "problemMatcher": [],
+      "group": "build",
+      "isBackground": true,
+      "detail": "Start Next.js development server on port 3002"
     }
   ]
 }

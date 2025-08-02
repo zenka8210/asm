@@ -69,6 +69,53 @@ if (req.createQueryBuilder) {
 }
 ```
 
+### **⚠️ CRITICAL: Schema Field Verification for Backend Development**
+
+**BEFORE editing any backend service, controller, or model code that involves database operations, you MUST:**
+
+1. **Always check the actual schema files first** using `read_file` or `grep_search` to verify field names
+2. **Never assume field names** - schemas may differ from expectations
+3. **Verify all related schemas** when working with populate/relationships
+
+#### Schema Verification Checklist:
+```bash
+# Check schema files before editing populate configurations
+server/models/[ModelName]Schema.js
+
+# Common schemas to verify:
+- UserSchema.js (name, email, phone, role, etc.)
+- ProductSchema.js (name, images, price, salePrice, etc.)  
+- ProductVariantSchema.js (product, color, size, stock, etc.)
+- ColorSchema.js (name, isActive) - NO hexCode field!
+- SizeSchema.js (name) 
+- OrderSchema.js (user, items, address, voucher, etc.)
+- AddressSchema.js (fullName, phone, addressLine, ward, district, city)
+- PaymentMethodSchema.js (method, isActive) - NOT name/type!
+- VoucherSchema.js (code, discountPercent, minimumOrderValue, etc.)
+```
+
+#### Example Schema Verification Process:
+```javascript
+// ❌ WRONG - Assuming field names without checking
+populate: [
+  { path: 'color', select: 'name hexCode' }, // hexCode doesn't exist!
+  { path: 'paymentMethod', select: 'name type' } // Wrong fields!
+]
+
+// ✅ CORRECT - After checking ColorSchema.js and PaymentMethodSchema.js  
+populate: [
+  { path: 'color', select: 'name isActive' }, // Verified fields
+  { path: 'paymentMethod', select: 'method isActive' } // Correct fields
+]
+```
+
+#### Backend Development Workflow:
+1. **Read the target schema file(s)** to understand exact field names
+2. **Check related schemas** for populate operations  
+3. **Verify field types** (String, Number, ObjectId, Boolean, etc.)
+4. **Test with sample data** to ensure populate works correctly
+5. **Update frontend types** if schema changes affect API responses
+
 ### Critical Index Management
 **NEVER create duplicate indexes** - this causes mongoose warnings:
 - Remove `index: true` from schema fields that already have `unique: true`
@@ -174,6 +221,154 @@ import { PageHeader } from '@/app/components/ui';
 3. **Mobile-First Design**: All components must be responsive
 4. **Loading States**: All interactions must have loading indicators
 5. **Error Handling**: All components must handle error states gracefully
+
+### Standard Page Layout Architecture
+**CRITICAL**: All pages must follow the consistent layout pattern established across the application.
+
+#### Page Structure Template
+```typescript
+// ✅ CORRECT - Standard layout pattern (used in /new, /profile, etc.)
+export default function SamplePage() {
+  return (
+    <div className="container">
+      <div className={styles.pageContainer}>
+        {/* Page Header - ALWAYS inside container */}
+        <PageHeader
+          title="Page Title"
+          subtitle="Page description"
+          icon={IconComponent}
+          breadcrumbs={[
+            { label: 'Trang chủ', href: '/' },
+            { label: 'Current Page', href: '/current' }
+          ]}
+        />
+
+        {/* Main Content */}
+        <div className={styles.mainContent}>
+          <div className="row">
+            {/* Sidebar (if needed) */}
+            <div className="col-3">
+              <div className={styles.sidebarCard}>
+                {/* Sidebar content */}
+              </div>
+            </div>
+            
+            {/* Main Content Area */}
+            <div className="col-9">
+              <div className={styles.contentCard}>
+                {/* Page content */}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ❌ INCORRECT - PageHeader outside container
+export default function BadPage() {
+  return (
+    <div className={styles.pageContainer}>
+      <PageHeader /> {/* Wrong: Header outside container */}
+      <div className="container">
+        {/* Content */}
+      </div>
+    </div>
+  );
+}
+```
+
+#### CSS Structure Requirements
+```css
+/* ✅ CORRECT - Standard page CSS structure */
+.pageContainer {
+  padding: 2rem 0;
+  background: transparent; /* Let global styles handle background */
+}
+
+.mainContent {
+  padding: 2rem 0 0 0; /* Top padding for spacing after PageHeader */
+  position: relative;
+  z-index: 1;
+}
+
+/* ❌ INCORRECT - Conflicting with global layout */
+.pageContainer {
+  min-height: 100vh;
+  background: linear-gradient(...); /* Don't override global backgrounds */
+  padding: 0; /* Wrong: No padding breaks spacing */
+}
+```
+
+#### Layout Hierarchy Rules
+1. **Container Wrapper**: All pages start with `<div className="container">`
+2. **PageHeader Placement**: Always inside the container, before main content
+3. **Grid System**: Use 12-column grid (`row`, `col-3`, `col-9`) for layouts
+4. **Card Components**: Wrap content sections in reusable card components
+5. **Responsive Design**: Ensure all layouts work on mobile/tablet/desktop
+
+#### Navigation & Icon Consistency
+```css
+/* ✅ CORRECT - Proper icon color management */
+.navItemActive .navIcon,
+.navItemActive .navLabel {
+  color: white !important; /* Ensure text visibility on active states */
+}
+
+.overviewCard .cardIcon svg {
+  color: white !important; /* Force icon colors in specific contexts */
+  fill: white !important;
+}
+
+.overviewCard .cardIcon * {
+  color: white !important; /* Override all child elements */
+  fill: white !important;
+}
+```
+
+#### CSS Specificity & Naming Best Practices
+**CRITICAL**: Prevent CSS conflicts and ensure consistent styling across components.
+
+```css
+/* ✅ CORRECT - Context-specific class naming */
+.overviewCard .cardIcon {
+  /* Styles specific to overview cards */
+}
+
+.securityCard .cardIcon {
+  /* Different styles for security section icons */
+}
+
+/* ✅ CORRECT - Use parent selectors for specificity */
+.navItemActive .navLabel {
+  color: white !important; /* Ensures text visibility */
+}
+
+/* ❌ INCORRECT - Generic class names causing conflicts */
+.cardIcon {
+  color: #333; /* This will conflict with other .cardIcon uses */
+}
+
+/* ❌ INCORRECT - Missing parent context */
+.navLabel {
+  color: white; /* May not override inherited styles */
+}
+```
+
+#### CSS Debugging & Override Strategies
+1. **Use Parent Selectors**: Always scope styles with parent classes
+2. **Important Declarations**: Use `!important` for critical overrides (icons, text visibility)
+3. **Multiple Selectors**: Target both `color` and `fill` for SVG icons
+4. **Universal Selectors**: Use `*` to override all child elements when needed
+5. **Hover State Management**: Ensure text remains visible on hover/active states
+
+#### Common Layout Pitfalls to Avoid
+- **Hero Sections**: Don't create oversized hero sections that break 12-grid layout
+- **PageHeader Position**: Never place PageHeader outside the container wrapper
+- **Background Conflicts**: Don't override global background in page-specific CSS
+- **Icon Colors**: Always specify both `color` and `fill` with `!important` for SVG icons
+- **Active States**: Ensure text remains visible on hover/active navigation states
 
 ### Development Rules
 - **New UI Components**: Place reusable components in `app/components/ui/`
@@ -503,3 +698,273 @@ const handleAdminAction = async (action: () => Promise<any>) => {
 - `fe/UI-UX-DESIGN-PATTERNS.md` - Design system specifications  
 - `server/controllers/baseController.js` - Controller patterns
 - `server/middlewares/queryMiddleware.js` - Query handling system
+
+## 🛡️ MANDATORY Schema Verification Protocol
+
+### **🚨 BEFORE EDITING ANY BACKEND CODE:**
+
+**Step 1: Identify Schema Dependencies**
+```bash
+# For any backend edit involving database operations:
+1. Identify main model (e.g., Order, Product, User)
+2. List all related models (via populate, references)
+3. Note all field names being used in the operation
+```
+
+**Step 2: Verify Schema Fields**
+```bash
+# Use these commands to check actual schema structure:
+read_file server/models/[MainModel]Schema.js
+read_file server/models/[RelatedModel]Schema.js
+grep_search "field_name" server/models/
+
+# Common mistakes to avoid:
+- ColorSchema: has 'name', 'isActive' - NO 'hexCode'
+- PaymentMethodSchema: has 'method', 'isActive' - NO 'name' or 'type'  
+- SizeSchema: only has 'name' - NO other fields
+- AddressSchema: has 'addressLine' - NO 'street' or 'address'
+```
+
+**Step 3: Cross-Reference with Frontend Types**
+```bash
+# Ensure frontend types match backend schema:
+read_file fe/src/types/index.ts
+# Update frontend types if backend schema has changed
+```
+
+**Step 4: Test Critical Operations**
+```bash
+# After making changes, verify these work:
+- Populate operations return expected data
+- Frontend can consume the API response
+- No MongoDB/Mongoose errors in server logs
+```
+
+### **🎯 Schema Field Quick Reference:**
+
+| Model | Key Fields | Common Mistakes |
+|-------|------------|-----------------|
+| **ColorSchema** | `name`, `isActive` | ❌ `hexCode` doesn't exist |
+| **SizeSchema** | `name` | ❌ No other fields |
+| **PaymentMethodSchema** | `method`, `isActive` | ❌ Not `name` or `type` |
+| **AddressSchema** | `fullName`, `phone`, `addressLine`, `ward`, `district`, `city` | ❌ Not `street` |
+| **ProductSchema** | `name`, `images`, `price`, `salePrice`, `category` | ✅ Standard fields |
+| **OrderSchema** | `orderCode`, `user`, `items`, `address`, `voucher`, `total`, `finalTotal` | ✅ Standard fields |
+
+### **💡 When Schema Verification is Required:**
+
+1. **Adding populate() calls** - Check all populated model schemas
+2. **Creating/updating query filters** - Verify field names exist
+3. **Modifying API responses** - Ensure frontend types match
+4. **Adding new database operations** - Check field types and constraints
+5. **Fixing bugs related to "undefined" fields** - Usually schema mismatch
+
+### **🔍 Schema Debugging Commands:**
+
+```bash
+# To find actual field names in a schema:
+grep_search "type.*:" server/models/ColorSchema.js
+
+# To see all available fields:
+read_file server/models/[Schema].js 1 50
+
+# To find where a field is used:
+grep_search "fieldName" server/services/
+grep_search "fieldName" server/controllers/
+```
+
+## 🔑 Testing Credentials & Database Configuration
+
+### **Standard Admin & User Credentials for API Testing**
+
+**CRITICAL**: Always use these standardized credentials when creating API test scripts to ensure consistency across all testing scenarios.
+
+#### Admin Account
+```bash
+# Admin Login Credentials
+Email: huy.nguyen.huu@gmail.com
+Password: huuhuy82
+Role: admin
+```
+
+#### Customer Account  
+```bash
+# Customer Login Credentials  
+Email: huy.nguyen.huu@gmail.com
+Password: huuhuy82
+Role: customer
+```
+
+#### Database Configuration
+```bash
+# Environment Variables (.env in /server/)
+DB_URI: mongodb+srv://finodev01:0101001@cluster0.pfafcr6.mongodb.net/asm?retryWrites=true&w=majority
+PORT: 5000
+JWT_SECRET: Nd83jsDJKJd8sklsjk89JDF893JdjsjlsdkfjsKLDJFL89sdjH
+JWT_EXPIRES_IN: 7d
+```
+
+### **API Testing Template**
+
+When creating any API test script, use this standard authentication template:
+
+```javascript
+// ✅ CORRECT - Standard API testing pattern
+const axios = require('axios');
+
+const ADMIN_CREDENTIALS = {
+  email: 'huy.nguyen.huu@gmail.com',
+  password: 'huuhuy82'
+};
+
+const CUSTOMER_CREDENTIALS = {
+  email: 'huy.nguyen.huu@gmail.com', 
+  password: 'huuhuy82'
+};
+
+async function getAdminToken() {
+  const response = await axios.post('http://localhost:5000/api/auth/login', ADMIN_CREDENTIALS);
+  // CRITICAL: Token is in response.data.data.token, NOT response.data.token
+  return response.data.data.token;
+}
+
+async function getCustomerToken() {
+  const response = await axios.post('http://localhost:5000/api/auth/login', CUSTOMER_CREDENTIALS);
+  // CRITICAL: Token is in response.data.data.token, NOT response.data.token
+  return response.data.data.token;
+}
+
+// Use in tests
+const adminToken = await getAdminToken();
+const headers = { 'Authorization': `Bearer ${adminToken}` };
+```
+
+### **⚠️ CRITICAL Token Extraction**
+
+**The login response structure is:**
+```javascript
+{
+  success: true,
+  message: 'Thành công',
+  data: {
+    user: { ... },
+    token: 'eyJhbGciOiJIUzI1NiIs...' // Token is HERE
+  }
+}
+```
+
+**Always use: `response.data.data.token` NOT `response.data.token`**
+
+### **API Testing Template**
+
+When creating any API test script, use this standard authentication template:
+
+```javascript
+// ✅ CORRECT - Standard API testing pattern
+const axios = require('axios');
+
+const ADMIN_CREDENTIALS = {
+  email: 'huy.nguyen.huu@gmail.com',
+  password: 'huuhuy82'
+};
+
+const CUSTOMER_CREDENTIALS = {
+  email: 'huy.nguyen.huu@gmail.com', 
+  password: 'huuhuy82'
+};
+
+async function getAdminToken() {
+  const response = await axios.post('http://localhost:5000/api/auth/login', ADMIN_CREDENTIALS);
+  // CRITICAL: Token is in response.data.data.token, NOT response.data.token
+  return response.data.data.token;
+}
+
+async function getCustomerToken() {
+  const response = await axios.post('http://localhost:5000/api/auth/login', CUSTOMER_CREDENTIALS);
+  // CRITICAL: Token is in response.data.data.token, NOT response.data.token
+  return response.data.data.token;
+}
+
+// Use in tests
+const adminToken = await getAdminToken();
+const headers = { 'Authorization': `Bearer ${adminToken}` };
+```
+
+### **Test Account Management**
+
+#### Account Verification Commands
+```bash
+# Verify admin account exists
+node -e "
+const User = require('./models/UserSchema');
+require('./config/db');
+setTimeout(async () => {
+  const admin = await User.findOne({ email: 'tran.thi.lan@gmail.com' });
+  console.log('Admin account:', admin ? 'EXISTS' : 'NOT FOUND');
+  process.exit(0);
+}, 2000);
+"
+
+# Create admin account if missing
+node createAdminUser.js
+```
+
+#### Testing Database State
+```bash
+# Check database connection and basic collections
+node verifyDatabase.js
+
+# Seed test data if needed
+node seedDatabase.js
+
+# Clean test data after testing
+node cleanAllDatabases.js
+```
+
+### **Development Environment Standards**
+
+#### Server Setup
+```bash
+# Backend server (Port 5000)
+cd d:\ReactJs\Datn-admin\Datn\asm\server
+npm run dev
+
+# Frontend server (Port 3002) 
+cd d:\ReactJs\Datn-admin\Datn\asm\fe
+npm run dev
+```
+
+#### Authentication Flow Testing
+1. **Login Verification**: Always test both admin and customer login
+2. **Token Validation**: Verify JWT tokens work for protected routes
+3. **Permission Testing**: Confirm admin-only endpoints reject customer access
+4. **Session Management**: Test token expiration and refresh if applicable
+
+### **Common Testing Patterns**
+
+#### Backend API Testing
+```bash
+# Full API test suite
+node testAllAPIs_main.js
+
+# Specific module tests
+node testPost.js          # Posts API
+node testOrder.js         # Orders API  
+node testProduct.js       # Products API
+node testUser.js          # Users API
+```
+
+#### Frontend Integration Testing
+```bash
+# Test frontend API services
+cd asm/fe
+node test-dashboard-apis.js
+```
+
+---
+
+**Key Testing Files to Reference:**
+- `server/testAllAPIs_main.js` - Comprehensive API testing
+- `server/createAdminUser.js` - Admin account creation
+- `server/verifyDatabase.js` - Database connection verification
+- `fe/test-dashboard-apis.js` - Frontend API integration tests
